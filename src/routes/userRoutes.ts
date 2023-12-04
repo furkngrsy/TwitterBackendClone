@@ -29,7 +29,10 @@ router.get('/' , async (req,res) =>{
 //get one user
 router.get('/:id' , async (req,res) =>{
     const {id} = req.params;
-    const user = await prisma.user.findUnique({where : {id : Number(id)}})
+    const user = await prisma.user.findUnique({
+        where : {id : Number(id)},
+        include : {tweet : true}
+    });
     if(!user){
         return res.status(400).json({ error: `Can't find a tweet` });
     }    
