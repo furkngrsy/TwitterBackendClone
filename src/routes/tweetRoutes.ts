@@ -24,13 +24,26 @@ router.post('/', async (req, res) => {
 });
 //list tweet
 router.get('/' , async (req,res) =>{
-    const allTweet = await prisma.tweet.findMany({include : {user : {select : {id : true, name : true, username : true, image : true}}}});
+    const allTweet = await prisma.tweet.findMany({
+        include : {
+            user : {
+                select : {
+                    id : true, 
+                    name : true, 
+                    username : true, 
+                    image : true
+                }
+            }
+        }
+    });
     res.json(allTweet);
 });
 //get one tweet
 router.get('/:id' , async (req,res) =>{
     const {id} = req.params;
-    const tweet = await prisma.tweet.findUnique({where : {id : Number(id)}})
+    const tweet = await prisma.tweet.findUnique({
+        where : {id : Number(id)}, 
+        include : {user : true}});
     if(!tweet){
         return res.status(400).json({ error: `Can't find a tweet` });
     }    
