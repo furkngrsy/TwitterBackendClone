@@ -57,9 +57,13 @@ router.put('/:id' , async (req,res) =>{
 router.delete('/:id' , async (req,res) =>{
     const {id} = req.params;
     try{
+        await prisma.tweet.deleteMany({
+            where : {userId : Number(id)}
+        });
         await prisma.user.delete({
             where : {id : Number(id)},
         });
+        
         res.status(200).json({error : `Deleted the user.`});
     }catch(e){
         res.status(400).json({error : `No user found matching the given id.`});
