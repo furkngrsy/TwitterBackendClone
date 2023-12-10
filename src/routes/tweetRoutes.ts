@@ -1,26 +1,64 @@
 import {Router} from 'express';
 import { PrismaClient } from '@prisma/client';
+import jwt from "jsonwebtoken";
 
 
 const router = Router();
 const prisma = new PrismaClient();
+const JWT_SECRET = "SUPER SECRET";
+
 
 
 //create tweet
 router.post('/', async (req, res) => {
-    const { content, image, userId} = req.body;
-    try {
-        const result = await prisma.tweet.create({
-        data: {
-            content,
-            image,
-            userId
-        },
-        });
-        res.json(result);
-    } catch (e) {
-    res.status(400).json({ error: 'Something went wrong!' });
+    const { content, image} = req.body;
+
+    //Authentication
+    const authHeader = req.headers['authorization'];
+    const jwtToken = authHeader?.split(' ')[1];
+
+    if(!jwtToken){
+        return res.sendStatus(401);
     }
+
+    try{
+        const payload = (await jwt.verify(jwtToken, JWT_SECRET)) as {
+            tokenId : number;
+        };
+        const dbToken = await prisma.token.findUnique({
+            where : {id : payload.tokenId},
+            include : {user : true}
+        });
+        //console.log(dbToken);
+
+        if(!dbToken?.valid){
+            return res.status(401).json({ error : 'API token invalid.'});
+        }
+
+        if(dbToken.expiration < new Date()){
+            return res.status(401).json({ error : 'API token expired.'});
+        }
+
+        try {
+            const result = await prisma.tweet.create({
+            data: {
+                content,
+                image,
+                userId: dbToken.userId
+            },
+            });
+
+            return res.status(200).json({result});
+
+        } catch (e) {
+            return res.status(401).json({ error: 'Something went wrong!' });
+        }
+
+    }catch(e){
+        return res.sendStatus(401);
+    }
+
+    
 });
 //list tweet
 router.get('/' , async (req,res) =>{
